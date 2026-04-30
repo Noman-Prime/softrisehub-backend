@@ -16,4 +16,4 @@ export const initSocket = (server) => {
 
     return io
 }
-export const getIO = () => io
+export {io}
