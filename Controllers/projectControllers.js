@@ -3,6 +3,7 @@ import project from "../Models/projecModels.js"
 import axios from "axios"
 import { cloudinaryUpload } from "../utils/cloudinaryUpload.js"
 import cloudinary from "../utils/cloudinary.js"
+import { io } from "../Socket/socket.js"
 
 export const createProject = async (req, res) => {
     try {
@@ -25,6 +26,7 @@ export const createProject = async (req, res) => {
                 message: "Project is not created"
             })
         }
+        io.emit("projectUpdated")
         return res.status(201).json({
             success: true,
             message: "project is created",
@@ -43,7 +45,7 @@ export const updateproject = async (req, res) => {
     try {
         const { oldPublic_id } = req.body
         const Project = await project.findById(req.params.id)
-        
+
         if (!Project) {
             return res.status(400).json({
                 success: false,
@@ -56,7 +58,7 @@ export const updateproject = async (req, res) => {
         if (req.file) {
             if (Project.images && Project.images.length > 0) {
                 const oldImageIndex = Project.images.findIndex(img => img.public_id === oldPublic_id)
-                
+
                 if (oldImageIndex === -1) {
                     return res.status(400).json({
                         success: false,
@@ -73,6 +75,7 @@ export const updateproject = async (req, res) => {
             }
         }
         await Project.save()
+        io.emit("projectUpdated")
         return res.status(200).json({
             success: true,
             message: "Project updated successfully",
@@ -118,8 +121,11 @@ export const deleteProject = async (req, res) => {
                 message: "Project is not found or deleted"
             })
         }
-        await cloudinary.uploader.destroy(Project.images)
+        for (const img of Project.images) {
+            await cloudinary.uploader.destroy(img.public_id)
+        }
         await Project.deleteOne()
+        io.emit("projectUpdated")
         return res.status(200).json({
             success: true,
             message: "Project is deleted"
