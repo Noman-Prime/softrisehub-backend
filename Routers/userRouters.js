@@ -18,7 +18,7 @@ import { isAuthenticated, isAdmin } from "../utils/auth.js";
 import multer from "multer"
 
 const userRouter = express.Router();
-const upload = multer({Storage: multer.memoryStorage()})
+const upload = multer({storage: multer.memoryStorage()})
 
 userRouter.post("/signup", createUser);
 userRouter.post("/login", loginUser);

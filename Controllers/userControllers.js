@@ -5,7 +5,7 @@ import {sendToken} from "../utils/sendToken.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto"
 import cloudinary from "../utils/cloudinary.js";
-import cloudinaryUpload from "../utils/cloudinaryUpload.js";
+import {cloudinaryUpload} from "../utils/cloudinaryUpload.js";
 
 
 export const createUser = async (req, res) => {
