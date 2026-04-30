@@ -1,11 +1,7 @@
-import { response } from "express"
 import project from "../Models/projecModels.js"
-import axios from "axios"
 import { cloudinaryUpload } from "../utils/cloudinaryUpload.js"
 import cloudinary from "../utils/cloudinary.js"
 import { getIO } from "../Socket/socket.js"
-
-const io = getIO()
 
 export const createProject = async (req, res) => {
     try {
@@ -16,7 +12,7 @@ export const createProject = async (req, res) => {
             imageData = {
                 public_id: result.public_id,
                 url: result.secure_url
-            };
+            }
         }
         const Project = await project.create({
             ...req.body,
@@ -28,14 +24,15 @@ export const createProject = async (req, res) => {
                 message: "Project is not created"
             })
         }
-        io.emit("projectUpdated")
+        const io = getIO()
+        io?.emit("projectUpdated")
         return res.status(201).json({
             success: true,
             message: "project is created",
             Project
         })
     } catch (error) {
-        console.error(error);
+        console.error(error)
         return res.status(500).json({
             success: false,
             message: "Something went wrong"
@@ -47,20 +44,16 @@ export const updateproject = async (req, res) => {
     try {
         const { oldPublic_id } = req.body
         const Project = await project.findById(req.params.id)
-
         if (!Project) {
             return res.status(400).json({
                 success: false,
                 message: "Project not found"
             })
         }
-
         Object.assign(Project, req.body)
-
         if (req.file) {
             if (Project.images && Project.images.length > 0) {
                 const oldImageIndex = Project.images.findIndex(img => img.public_id === oldPublic_id)
-
                 if (oldImageIndex === -1) {
                     return res.status(400).json({
                         success: false,
@@ -77,14 +70,15 @@ export const updateproject = async (req, res) => {
             }
         }
         await Project.save()
-        io.emit("projectUpdated")
+        const io = getIO()
+        io?.emit("projectUpdated")
         return res.status(200).json({
             success: true,
             message: "Project updated successfully",
             Project
         })
     } catch (error) {
-        console.error(error);
+        console.error(error)
         return res.status(500).json({
             success: false,
             message: "Something went wrong"
@@ -96,8 +90,8 @@ export const findProject = async (req, res) => {
     try {
         const Project = await project.findById(req.params.id)
         if (!Project) {
-            return res.status(400).json({
-                success: true,
+            return res.status(404).json({
+                success: false,
                 message: "No project is found"
             })
         }
@@ -106,7 +100,7 @@ export const findProject = async (req, res) => {
             Project
         })
     } catch (error) {
-        console.error(error);
+        console.error(error)
         return res.status(500).json({
             success: false,
             message: "Something went wrong"
@@ -127,13 +121,14 @@ export const deleteProject = async (req, res) => {
             await cloudinary.uploader.destroy(img.public_id)
         }
         await Project.deleteOne()
-        io.emit("projectUpdated")
+        const io = getIO()
+        io?.emit("projectUpdated")
         return res.status(200).json({
             success: true,
             message: "Project is deleted"
         })
     } catch (error) {
-        console.error(error);
+        console.error(error)
         return res.status(500).json({
             success: false,
             message: "Something went wrong"
@@ -145,8 +140,8 @@ export const allProjects = async (req, res) => {
     try {
         const Projects = await project.find()
         if (!Projects || Projects.length === 0) {
-            return res.status(400).json({
-                success: true,
+            return res.status(404).json({
+                success: false,
                 message: "No Project is found"
             })
         }
@@ -156,7 +151,7 @@ export const allProjects = async (req, res) => {
             totalProjects: Projects.length
         })
     } catch (error) {
-        console.error(error);
+        console.error(error)
         return res.status(500).json({
             success: false,
             message: "Something went wrong"

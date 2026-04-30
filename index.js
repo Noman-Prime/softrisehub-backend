@@ -15,7 +15,7 @@ const app = express()
 const Server = http.createServer(app)
 initSocket(Server);
 app.use(cors({
-  origin: [process.env.DOMAIN, "http://localhost:5173"],
+  origin: [process.env.DOMAIN, process.env.LOCAL],
   credentials: true
 }
 ))
