@@ -3,7 +3,8 @@ import project from "../Models/projecModels.js"
 import axios from "axios"
 import { cloudinaryUpload } from "../utils/cloudinaryUpload.js"
 import cloudinary from "../utils/cloudinary.js"
-import { io } from "../Socket/socket.js"
+import { getIO } from "../Socket/socket.js"
+
 
 export const createProject = async (req, res) => {
     try {
@@ -26,7 +27,12 @@ export const createProject = async (req, res) => {
                 message: "Project is not created"
             })
         }
-        io.emit("projectUpdated")
+        const io = getIO()
+        console.log("BEFORE EMIT")
+        io?.emit("projectUpdated")
+        if(io.emit()){
+            console.log("emitt is activated");
+        }
         return res.status(201).json({
             success: true,
             message: "project is created",
