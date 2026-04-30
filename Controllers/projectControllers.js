@@ -3,7 +3,9 @@ import project from "../Models/projecModels.js"
 import axios from "axios"
 import { cloudinaryUpload } from "../utils/cloudinaryUpload.js"
 import cloudinary from "../utils/cloudinary.js"
-import { io } from "../Socket/socket.js"
+import { getIO } from "../Socket/socket.js"
+
+const io = getIO()
 
 export const createProject = async (req, res) => {
     try {
