@@ -1,24 +1,22 @@
 import User from "../Models/userModel.js";
 import Emails from "../utils/emailAccounts.js";
 import sendEmail from "../utils/sendEmail.js";
-import {sendToken} from "../utils/sendToken.js";
+import { sendToken } from "../utils/sendToken.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto"
 import cloudinary from "../utils/cloudinary.js";
-import {cloudinaryUpload} from "../utils/cloudinaryUpload.js";
+import { cloudinaryUpload } from "../utils/cloudinaryUpload.js";
 
 
 export const createUser = async (req, res) => {
     try {
-        const { firstName, lastName, email, password, phoneNumber, country ,images} = req.body;
-
+        const { firstName, lastName, email, password, phoneNumber, country } = req.body;
         if (!firstName || !lastName || !email || !password || !phoneNumber) {
             return res.status(400).json({
                 success: false,
                 message: "fill the required fields",
             });
         }
-
         const alreadyUser = await User.findOne({ email });
         if (alreadyUser) {
             return res.status(400).json({
@@ -26,9 +24,18 @@ export const createUser = async (req, res) => {
                 message: "User already exists",
             });
         }
-
-        const user = await User.create(req.body);
-
+        let imageData = null
+        if (req.file) {
+            const result = await cloudinaryUpload(req.file.buffer)
+            imageData = {
+                public_id: result.public_id,
+                url: result.secure_url
+            };
+        }
+        const user = await User.create({
+            ...req.body,
+            image: imageData
+        });
         return sendToken(user, 201, res);
     } catch (error) {
         console.error(error);
@@ -99,7 +106,7 @@ export const logout = async (req, res) => {
 export const getMyProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
-        if(!user){
+        if (!user) {
             return res.status(400).json({
                 success: false,
                 message: "User is not logged In"
@@ -150,11 +157,24 @@ export const getSingleUser = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find();
+        const users = await User.find().select("+role");
+        let totalAccounts = users.length;
+        let totalAdmin = 0;
+        let totalDeveloper = 0;
+        let totalUser = 0;
+
+        users.forEach((U) => {
+            if (U.role === "Admin") totalAdmin++
+            else if (U.role === "Developer") totalDeveloper++
+            else if (U.role === "User") totalUser++
+        })
         return res.status(200).json({
             success: true,
             users,
-            totalUsers: users.length
+            Total: totalAccounts,
+            Admin: totalAdmin,
+            Developer: totalDeveloper,
+            User: totalUser
         });
     } catch (error) {
         console.error(error);
@@ -168,19 +188,13 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-
         if (req.user.role !== "admin" && req.user._id.toString() !== id) {
             return res.status(403).json({
                 success: false,
                 message: "Not authorized",
             });
         }
-
-        const { firstName, lastName, email, phoneNumber, role, country } = req.body
-        const user = await User.findByIdAndUpdate(id, req.body, {
-            new: true,
-            runValidators: true,
-        });
+        const user = await User.findById(id);
 
         if (!user) {
             return res.status(404).json({
@@ -188,11 +202,33 @@ export const updateUser = async (req, res) => {
                 message: "User not found",
             });
         }
+        const allowedUpdates = {
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            phoneNumber: req.body.phoneNumber,
+            role: req.body.role,
+            country: req.body.country,
+        };
+
+        Object.assign(user, allowedUpdates);
+        if (req.file) {
+            if (user.image?.public_id) {
+                await cloudinary.uploader.destroy(user.image.public_id);
+            }
+            const result = await cloudinary.uploader.upload(req.file.path || req.file.buffer);
+            user.image = {
+                public_id: result.public_id,
+                url: result.secure_url,
+            };
+        }
+        await user.save();
 
         return res.status(200).json({
             success: true,
             user,
         });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -213,13 +249,21 @@ export const deleteUser = async (req, res) => {
             });
         }
 
-        const user = await User.findByIdAndDelete(id);
+        const user = await User.findById(id);
         if (!user || !user.isActive) {
             return res.status(404).json({
                 success: false,
                 message: "User not found",
             });
         }
+        if (user.image?.public_id) {
+            try {
+                await cloudinary.uploader.destroy(user.image.public_id)
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        await user.deleteOne()
         return res.status(200).json({
             success: true,
             message: "User deleted successfully",
@@ -399,22 +443,22 @@ export const resetPassword = async (req, res) => {
     }
 }
 
-export const addImage = async (req, res) =>{
+export const addImage = async (req, res) => {
     try {
         const user = await User.findById(req.user.id)
-        if(!user){
+        if (!user) {
             return res.status(400).json({
                 success: false,
                 message: "user is not found"
             })
         }
-        if(!req.file){
+        if (!req.file) {
             return res.status(400).json({
                 success: false,
                 message: "image is required"
             })
         }
-        if(user.image?.public_id){
+        if (user.image?.public_id) {
             await cloudinary.uploader.destroy(user.image.public_id)
         }
         const result = await cloudinaryUpload(req.file.buffer, "SoftRiseHub/Users")

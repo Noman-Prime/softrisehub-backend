@@ -31,7 +31,12 @@ const projectSchema = new mongoose.Schema({
                 type: String
             }
         }
-    ]
+    ],
+    status: {
+        type: String,
+        enum: ["pending","building", "completed"],
+        default: "pending"
+    }
 }, { timestamps: true })
 
 const project = mongoose.model("Project", projectSchema)

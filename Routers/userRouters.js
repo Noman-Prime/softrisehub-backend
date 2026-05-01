@@ -16,9 +16,10 @@ import {
 } from "../Controllers/userControllers.js";
 import { isAuthenticated, isAdmin } from "../utils/auth.js";
 import multer from "multer"
+import { upload } from "../utils/cloudinaryUpload.js";
 
 const userRouter = express.Router();
-const upload = multer({storage: multer.memoryStorage()})
+userRouter.use(upload.single("image"))
 
 userRouter.post("/signup", createUser);
 userRouter.post("/login", loginUser);
@@ -27,7 +28,7 @@ userRouter.get("/me", isAuthenticated, getMyProfile);
 userRouter.put("/update/:id", isAuthenticated, updateUser);
 userRouter.put("/update/password", isAuthenticated, updatePassword);
 userRouter.delete("/delete/:id", isAuthenticated, deleteUser);
-userRouter.get("/admin/users", isAuthenticated, isAdmin("admin"), getAllUsers);
+userRouter.get("/admin/users", isAuthenticated, isAdmin("Admin"), getAllUsers);
 userRouter.get("/admin/user/:id", isAuthenticated, isAdmin("admin"), getSingleUser);
 userRouter.post("/admin/force-logout/:id", isAuthenticated, isAdmin("admin"), forceLogoutUser);
 userRouter.post("/password/reset/request",requestPasswordReset);

@@ -147,18 +147,34 @@ export const deleteProject = async (req, res) => {
 
 export const allProjects = async (req, res) => {
     try {
-        const Projects = await project.find()
+        const Projects = await project.find().select("+status")
         if (!Projects || Projects.length === 0) {
             return res.status(400).json({
                 success: true,
                 message: "No Project is found"
             })
         }
+        
+        let totalProjects = Projects.length;
+        let pendingProjects = 0;
+        let buildingProjects = 0;
+        let completedProjects = 0;
+
+        Projects.forEach((p) => {
+            if (p.status === "pending") pendingProjects++;
+            else if (p.status === "building") buildingProjects++;
+            else if (p.status === "completed") completedProjects++;
+        });
+
         return res.status(200).json({
             success: true,
             Projects,
-            totalProjects: Projects.length
-        })
+            Total: totalProjects,
+            Pending: pendingProjects,
+            Building: buildingProjects,
+            Completed :completedProjects
+        });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({
