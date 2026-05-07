@@ -6,7 +6,7 @@ const ProjectRouter = express.Router()
 ProjectRouter.use(upload.single("images"));
 ProjectRouter.post("/create", createProject)
 ProjectRouter.post("/update", updateproject)
-ProjectRouter.post("/find/:id", findProject)
+ProjectRouter.get("/find/:id", findProject)
 ProjectRouter.delete("/delete/:id", deleteProject)
 ProjectRouter.get("/all", allProjects)
 

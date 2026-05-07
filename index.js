@@ -8,6 +8,7 @@ import connection from "./conn.js"
 import userRouter from "./Routers/userRouters.js"
 import cors from "cors"
 import ProjectRouter from "./Routers/projectRouters.js"
+import packageRouter from "./Routers/packageRouter.js"
 
 
 const port = process.env.PORT
@@ -23,6 +24,7 @@ app.use(cookieParser())
 app.use(express.json())
 app.use("/api/v1/user", userRouter)
 app.use("/api/v1/project", ProjectRouter)
+app.use("/api/v1/package", packageRouter)
 connection().then(() => {
     Server.listen(port, "0.0.0.0", () => {
         console.log(`Server is Running on port: ${port}`);
