@@ -25,13 +25,13 @@ const packageSchema = new mongoose.Schema(
       trim: true,
     },
     price: {
-      type: Number,
+      type: String,
       required: true,
     },
     details: {
       type: String,
       trim: true,
-    },
+    }
   },
   { timestamps: true }
 );

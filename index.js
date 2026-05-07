@@ -16,7 +16,7 @@ const app = express()
 const Server = http.createServer(app)
 initSocket(Server);
 app.use(cors({
-  origin: [process.env.DOMAIN, process.env.LOCAL],
+  origin: [process.env.DOMAIN, process.env.LOCAL,"http://127.0.0.1:5173"],
   credentials: true
 }
 ))

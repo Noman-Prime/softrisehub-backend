@@ -5,8 +5,8 @@ const packageRouter = new express.Router()
 
 packageRouter.post("/create", isAuthenticated, isAdmin("Admin") ,createPackage)
 packageRouter.put("/update/:id", isAuthenticated, isAdmin("Admin"), updatePackage)
-packageRouter.get("/findAll", isAuthenticated, isAdmin("Admin"), findAllPackages)
-packageRouter.get("/find/:id", isAuthenticated, isAdmin("Admin"), findPackage)
+packageRouter.get("/findAll", findAllPackages)
+packageRouter.get("/find/:id", findPackage)
 packageRouter.delete("delete/:id", isAuthenticated, isAdmin("Admin"), deletePackage)
 
 export default packageRouter
