@@ -3,7 +3,6 @@ import project from "../Models/projecModels.js"
 import axios from "axios"
 import { cloudinaryUpload } from "../utils/cloudinaryUpload.js"
 import cloudinary from "../utils/cloudinary.js"
-import { getIO } from "../Socket/socket.js"
 
 
 export const createProject = async (req, res) => {
@@ -30,7 +29,7 @@ export const createProject = async (req, res) => {
         const io = getIO()
         console.log("BEFORE EMIT")
         io?.emit("projectUpdated")
-        if(io.emit()){
+        if (io.emit()) {
             console.log("emitt is activated");
         }
         return res.status(201).json({
@@ -131,7 +130,6 @@ export const deleteProject = async (req, res) => {
             await cloudinary.uploader.destroy(img.public_id)
         }
         await Project.deleteOne()
-        io.emit("projectUpdated")
         return res.status(200).json({
             success: true,
             message: "Project is deleted"
@@ -147,6 +145,44 @@ export const deleteProject = async (req, res) => {
 
 export const allProjects = async (req, res) => {
     try {
+        if (req.headers.accept === "text/event-stream") {
+            res.setHeader("Content-Type", "text/event-stream")
+            res.setHeader("Cache-control", "no-cache")
+            res.setHeader("Connection", "keep-alive")
+            res.status(200)
+
+            const checkUpdate = await project.watch()
+            checkUpdate.on("change", async (change) => {
+                try {
+                    const updatedData = await project.find().select("+status")
+                    let totalProjects = updatedData.length;
+                    let pendingProjects = 0;
+                    let buildingProjects = 0;
+                    let completedProjects = 0;
+
+                    updatedData.forEach((p) => {
+                        if (p.status === "pending") pendingProjects++;
+                        else if (p.status === "building") buildingProjects++;
+                        else if (p.status === "completed") completedProjects++;
+                    })
+                    res.write(`data: ${JSON.stringify({ 
+                        Projects: updatedData, 
+                        Total: totalProjects,
+                        Pending: pendingProjects,
+                        Building: buildingProjects,
+                        Completed: completedProjects 
+                    })}\n\n`)
+                } catch (error) {
+                    console.log("UpdatedData is not bing found", error);
+                }
+            })
+            req.on("close", () => {
+                checkUpdate.close()
+                res.end()
+            })
+            return
+        }
+
         const Projects = await project.find().select("+status")
         if (!Projects || Projects.length === 0) {
             return res.status(400).json({
@@ -154,7 +190,7 @@ export const allProjects = async (req, res) => {
                 message: "No Project is found"
             })
         }
-        
+
         let totalProjects = Projects.length;
         let pendingProjects = 0;
         let buildingProjects = 0;
@@ -172,7 +208,7 @@ export const allProjects = async (req, res) => {
             Total: totalProjects,
             Pending: pendingProjects,
             Building: buildingProjects,
-            Completed :completedProjects
+            Completed: completedProjects
         });
 
     } catch (error) {

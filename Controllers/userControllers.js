@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto"
 import cloudinary from "../utils/cloudinary.js";
 import { cloudinaryUpload } from "../utils/cloudinaryUpload.js";
+import mongoose, { mongo } from "mongoose";
 
 
 export const createUser = async (req, res) => {
@@ -105,6 +106,44 @@ export const logout = async (req, res) => {
 
 export const getMyProfile = async (req, res) => {
     try {
+        if (req.headers.accept === "text/event-stream") {
+            res.setHeader("Content-Type", "text/event-stream")
+            res.setHeader("Cache-Control", "no-cache")
+            res.setHeader("Connection", "keep-alive")
+            res.status(200)
+
+            const userId = req.user?._id
+            if (!userId) {
+                res.write(`data: ${JSON.stringify({ error: "Unauthorized" })}\n\n`)
+                return res.end()
+            }
+
+            const targetId = new mongoose.Types.ObjectId(userId.toString())
+            const checkChange = User.watch([{ $match: { "documentKey._id": targetId } }])
+
+            checkChange.on("change", async (change) => {
+                try {
+                    if (change.operationType === "delete") {
+                        res.write(`data: ${JSON.stringify({ error: "Unauthorized", message: "Account no longer exists." })}\n\n`)
+                        await checkChange.close()
+                        return res.end()
+                    }
+                    const result = await User.findById(userId)
+                    res.write(`data: ${JSON.stringify({ user: result })}\n\n`)
+                } catch (error) {
+                    console.log("Error handling change stream update:", error);
+                }
+            })
+            checkChange.on("error", (error) => {
+                console.log("Change stream operational error:", error);
+            })
+            res.on("close", async () => {
+                await checkChange.close()
+                res.end()
+            })
+            return
+        }
+
         const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(400).json({
@@ -157,6 +196,45 @@ export const getSingleUser = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
+        if (req.headers.accept === "text/event-stream") {
+            res.setHeader("Content-Type", "text/event-stream")
+            res.setHeader("Cache-Control", "no-cache")
+            res.setHeader("Connection", "keep-alive")
+            res.status(200)
+
+            const checkUpdate = await User.watch()
+            checkUpdate.on("change", async (change) => {
+                try {
+                    let totalAccounts = 0;
+                    let totalAdmin = 0;
+                    let totalDeveloper = 0;
+                    let totalUser = 0;
+
+
+                    const result = await User.find().select("+role")
+                    result.forEach((U) => {
+                        if (U.role === "Admin") totalAdmin++
+                        else if (U.role === "Developer") totalDeveloper++
+                        else if (U.role === "User") totalUser++
+                    })
+                    await res.write(`data: ${JSON.stringify({
+                        users: result,
+                        Total: result.length,
+                        Admin: totalAdmin,
+                        Developer: totalDeveloper,
+                        User: totalUser
+                    })}\n\n`)
+                } catch (error) {
+                    console.log(error);
+                }
+            })
+            req.on("close", () => {
+                checkUpdate.close()
+                res.end()
+            })
+            return
+        }
+
         const users = await User.find().select("+role");
         let totalAccounts = users.length;
         let totalAdmin = 0;
