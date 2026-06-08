@@ -27,7 +27,7 @@ userRouter.post("/logout", isAuthenticated, logout);
 userRouter.get("/me", isAuthenticated, getMyProfile);
 userRouter.put("/update/:id", isAuthenticated, updateUser);
 userRouter.put("/update/password", isAuthenticated, updatePassword);
-userRouter.delete("/delete/:id", isAuthenticated, deleteUser);
+userRouter.delete("/delete/:id", isAuthenticated,isAdmin("Admin"), deleteUser);
 userRouter.get("/admin/users", getAllUsers);
 userRouter.get("/admin/user/:id", isAuthenticated, isAdmin("Admin"), getSingleUser);
 userRouter.post("/admin/force-logout/:id", isAuthenticated, isAdmin("Admin"), forceLogoutUser);

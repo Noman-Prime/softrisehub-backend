@@ -320,7 +320,7 @@ export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        if (req.user.role !== "admin" && req.user._id.toString() !== id) {
+        if (req.user.role !== "Admin" && req.user._id.toString() !== id) {
             return res.status(403).json({
                 success: false,
                 message: "Not authorized",
@@ -446,7 +446,7 @@ export const requestPasswordReset = async (req, res) => {
 
         await user.save({ validateBeforeSave: false });
 
-        const resetUrl = `http://localhost:3000/api/v1/user/password/reset/${resetToken}`;
+        const resetUrl = `https://softrisehub.com/reset-password/${resetToken}`;
 
         await sendEmail({
             mail: Emails.support.mail,
@@ -458,7 +458,7 @@ export const requestPasswordReset = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: `Email has been sent to ${user.email}`
+            message: "Email with Password Reset Link is sent to your register email"
         });
 
     } catch (error) {
