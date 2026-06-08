@@ -10,6 +10,7 @@ import ProjectRouter from "./Routers/projectRouters.js"
 import packageRouter from "./Routers/packageRouter.js"
 import sliderRouter from "./Routers/sliderRouter.js"
 import serviceRouter from "./Routers/serviceRouters.js"
+import streamRouter from "./Routers/streamRouter.js"
 
 
 const port = process.env.PORT
@@ -21,6 +22,7 @@ app.use(cors({
 ))
 app.use(cookieParser())
 app.use(express.json())
+app.use("/api/v1", streamRouter)
 app.use("/api/v1/user", userRouter)
 app.use("/api/v1/project", ProjectRouter)
 app.use("/api/v1/package", packageRouter)
