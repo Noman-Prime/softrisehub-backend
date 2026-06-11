@@ -32,7 +32,7 @@ userRouter.get("/admin/users", getAllUsers);
 userRouter.get("/admin/user/:id", isAuthenticated, isAdmin("Admin"), getSingleUser);
 userRouter.post("/admin/force-logout/:id", isAuthenticated, isAdmin("Admin"), forceLogoutUser);
 userRouter.post("/password/reset/request",requestPasswordReset);
-userRouter.put("/password/reset/:token", resetPassword);
+userRouter.put("/reset-password/:token", resetPassword);
 userRouter.put("/upload/image", isAuthenticated, upload.single("image"), addImage);
 
 
@@ -48,7 +48,7 @@ GET     http://localhost:3000/api/v1/user/me                   → Get logged-in
 PUT     http://localhost:3000/api/v1/user/update/:id           → Update user (own profile or by admin)
 PUT     http://localhost:3000/api/v1/user/update/password      → Update logged-in user's password
 POST    http://localhost:3000/api/v1/user/password/reset/request → password reset request for user only
-put     http://localhost:3000/api/v1/user/password/reset/:token → password reset for user only
+put     http://localhost:3000/api/v1/user/reset-password/:token → password reset for user only
 DELETE  http://localhost:3000/api/v1/user/delete/:id           → Delete user account (own or admin)
 GET     http://localhost:3000/api/v1/user/admin/users          → Get all users (admin only)
 GET     http://localhost:3000/api/v1/user/admin/user/:id       → Get single user (admin only)

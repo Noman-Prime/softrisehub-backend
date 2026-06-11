@@ -86,12 +86,7 @@ export const loginUser = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
-        return res.status(200)
-            .cookie("token", null, {
-                expires: new Date(0),
-                httpOnly: true
-            })
-            .json({
+        return res.status(200).cookie("token", null, {expires: new Date(0),httpOnly: true}).json({
                 success: true,
                 message: "User logged out successfully",
             });
@@ -106,44 +101,6 @@ export const logout = async (req, res) => {
 
 export const getMyProfile = async (req, res) => {
     try {
-        if (req.headers.accept === "text/event-stream") {
-            res.setHeader("Content-Type", "text/event-stream")
-            res.setHeader("Cache-Control", "no-cache")
-            res.setHeader("Connection", "keep-alive")
-            res.status(200)
-
-            const userId = req.user?._id
-            if (!userId) {
-                res.write(`data: ${JSON.stringify({ error: "Unauthorized" })}\n\n`)
-                return res.end()
-            }
-
-            const targetId = new mongoose.Types.ObjectId(userId.toString())
-            const checkChange = User.watch([{ $match: { "documentKey._id": targetId } }])
-
-            checkChange.on("change", async (change) => {
-                try {
-                    if (change.operationType === "delete") {
-                        res.write(`data: ${JSON.stringify({ error: "Unauthorized", message: "Account no longer exists." })}\n\n`)
-                        await checkChange.close()
-                        return res.end()
-                    }
-                    const result = await User.findById(userId)
-                    res.write(`data: ${JSON.stringify({ user: result })}\n\n`)
-                } catch (error) {
-                    console.log("Error handling change stream update:", error);
-                }
-            })
-            checkChange.on("error", (error) => {
-                console.log("Change stream operational error:", error);
-            })
-            res.on("close", async () => {
-                await checkChange.close()
-                res.end()
-            })
-            return
-        }
-
         const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(400).json({
@@ -472,7 +429,7 @@ export const requestPasswordReset = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
     try {
-        const resetPasswordToken = crypto.createHash("sha256").update(req.params.token).digest("hex")
+        const resetPasswordToken = await crypto.createHash("sha256").update(req.params.token).digest("hex")
         const user = await User.findOne({
             resetPasswordToken,
             resetPasswordExpire: { $gt: Date.now() }
