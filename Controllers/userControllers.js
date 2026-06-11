@@ -86,10 +86,10 @@ export const loginUser = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
-        return res.status(200).cookie("token", null, {expires: new Date(0),httpOnly: true}).json({
-                success: true,
-                message: "User logged out successfully",
-            });
+        return res.status(200).cookie("token", null, { expires: new Date(0), httpOnly: true }).json({
+            success: true,
+            message: "User logged out successfully",
+        });
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -101,6 +101,36 @@ export const logout = async (req, res) => {
 
 export const getMyProfile = async (req, res) => {
     try {
+        if (req.headers.accept === "text/event-stream") {
+            res.setHeader("Content-Type", "text/event-stream");
+            res.setHeader("Cache-Control", "no-cache");
+            res.setHeader("Connection", "keep-alive");
+            res.status(200);
+            res.write(`data: ${JSON.stringify({ status: "connected" })}\n\n`);
+
+            const CheckData = await User.watch([
+                { $match: { "documentKey._id": req.user._id } }
+            ]);
+
+            CheckData.on("change", async (change) => {
+                try {
+                    const result = await User.findById(req.user._id);
+                    if (result) {
+                        res.write(`data: ${JSON.stringify({ updatedData: result })}\n\n`);
+                    }
+                } catch (error) {
+                    console.log("No Updated Data found: ", error);
+                }
+            });
+            CheckData.on("error", (error) => {
+                console.log("SSE is not Working-> ", error);
+            });
+            req.on("close", () => {
+                CheckData.close();
+                res.end();
+            });
+            return;
+        }
         const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(400).json({
