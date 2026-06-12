@@ -106,8 +106,16 @@ export const getMyProfile = async (req, res) => {
             res.setHeader("Cache-Control", "no-cache");
             res.setHeader("Connection", "keep-alive");
             res.status(200);
-            res.write(`data: ${JSON.stringify({ status: "connected" })}\n\n`);
 
+            // 1. FETCH AND SEND CURRENT DATA IMMEDIATELY
+            const initialUser = await User.findById(req.user._id);
+            if (initialUser) {
+                res.write(`data: ${JSON.stringify({ updatedData: initialUser })}\n\n`);
+            } else {
+                res.write(`data: ${JSON.stringify({ status: "connected" })}\n\n`);
+            }
+
+            // 2. WATCH FOR FUTURE CHANGES
             const CheckData = await User.watch([
                 { $match: { "documentKey._id": req.user._id } }
             ]);
@@ -122,9 +130,11 @@ export const getMyProfile = async (req, res) => {
                     console.log("No Updated Data found: ", error);
                 }
             });
+
             CheckData.on("error", (error) => {
                 console.log("SSE is not Working-> ", error);
             });
+
             req.on("close", () => {
                 CheckData.close();
                 res.end();
